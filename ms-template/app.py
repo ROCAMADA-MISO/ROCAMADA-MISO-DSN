@@ -36,7 +36,7 @@ with app.app_context():
     db.create_all()
 
 
-@app.route('/')
+@app.route('/ms-template')
 def hello():
     return 'Hello, World!'
 
