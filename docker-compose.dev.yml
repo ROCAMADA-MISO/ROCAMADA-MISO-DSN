@@ -16,3 +16,12 @@ services:
     environment:
       POSTGRES_DB: cct
       POSTGRES_HOST_AUTH_METHOD: trust
+  users-db:
+    image: postgres:14.5
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./db_users_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_HOST_AUTH_METHOD: trust

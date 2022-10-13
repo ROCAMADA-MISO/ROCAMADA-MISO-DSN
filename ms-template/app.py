@@ -30,7 +30,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
         fields = ("id", "name", "email")
 
 
-rule_schema = UserSchema()
+user_schema = UserSchema()
 
 with app.app_context():
     db.create_all()
