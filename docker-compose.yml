@@ -2,7 +2,7 @@ version: "3.4"
 
 x-var: &parameters
   JWT_SECRET: thisisasecret
-  DB_URI: postgresql://postgres@cct-db:5432/cct
+  DB_TASKS_URI: postgresql://postgres@tasks-db:5432/tasks
   DB_USERS_URI: postgresql://postgres@users-db:5432/users
 services:
   redis:
@@ -11,28 +11,28 @@ services:
       - "6379:6379"
     volumes: 
       - ./redis_data:/data
-  cct-db:
+  tasks-db:
     image: postgres:14.5
     ports:
       - "5432:5432"
     volumes:
-      - ./db_data:/var/lib/postgresql/data
+      - ./db_tasks_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: cct
+      POSTGRES_DB: tasks
       POSTGRES_HOST_AUTH_METHOD: trust
-  ms-template:
+  ms-tasks:
     volumes:
-        - ./ms-template/:/mnt/
-    build: ./ms-template
+        - ./ms-tasks/:/mnt/
+    build: ./ms-tasks
     working_dir: /backend/
-    command: bash -c "chmod +x ./wait-for-it.sh && ./wait-for-it.sh cct-db:5432 && gunicorn -b 0.0.0.0:5000 'app:return_app()'"
+    command: bash -c "chmod +x ./wait-for-it.sh && ./wait-for-it.sh tasks-db:5432 && gunicorn -b 0.0.0.0:5000 'app:return_app()'"
     ports:
       - "5000:5000"
     restart: on-failure
     environment:
       <<: *parameters
     depends_on:
-      - cct-db
+      - tasks-db
   users-db:
     image: postgres:14.5
     ports:
@@ -65,5 +65,5 @@ services:
         - ./nginx/localhost.key:/etc/ssl/private/localhost.key
     restart: on-failure
     depends_on:
-        - ms-template
+        - ms-tasks
         - ms-auth
