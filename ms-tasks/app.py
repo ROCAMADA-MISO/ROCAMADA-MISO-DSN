@@ -10,7 +10,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DB_URI']
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DB_TASKS_URI']
 app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET']
 
 db = SQLAlchemy(app)
@@ -18,25 +18,26 @@ ma = Marshmallow(app)
 jwt = JWTManager(app)
 api = Api(app)
 
-class User(db.Model):
+class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(100))
-    password = db.Column(db.Integer)
-    email = db.Column(db.String(100))
+    filename = db.Column(db.String(100))
+    new_format = db.Column(db.String(10))
+    status = db.Column(db.String(15))
+    timestamp = db.Column(db.DateTime(timezone=False))
 
 
-class UserSchema(ma.SQLAlchemyAutoSchema):
+class TaskSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        fields = ("id", "name", "email")
+        fields = ("id", "filename", "new_format", "status", "timestamp")
 
 
-user_schema = UserSchema()
+task_schema = TaskSchema()
 
 with app.app_context():
     db.create_all()
 
 
-@app.route('/ms-template')
+@app.route('/api/ms-tasks')
 def hello():
     return 'Hello, World!'
 
