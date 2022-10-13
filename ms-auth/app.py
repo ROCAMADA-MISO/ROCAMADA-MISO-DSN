@@ -28,13 +28,6 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True)
 
 
-class UserSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        fields = ("id", "username", "email")
-
-
-user_schema = UserSchema()
-
 with app.app_context():
     db.create_all()
 
