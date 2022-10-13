@@ -2,10 +2,10 @@ import os
 import time
 from datetime import datetime
 from dotenv import load_dotenv
-from flask import Flask, request
 from flask_restful import Api, Resource
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+from flask import Flask, request, send_file
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 
 load_dotenv()
@@ -87,8 +87,9 @@ class TaskResource(Resource):
             task.new_format = new_format
             db.session.commit()
         if task.status == "processed":
-            os.remove("./{}.{}".format(task.filename.split(".")[0],task.new_format))
-            
+            os.remove(
+                "./{}.{}".format(task.filename.split(".")[0], task.new_format))
+
             task.new_format = new_format
             task.status = "uploaded"
             db.session.commit()
@@ -102,10 +103,33 @@ class TaskResource(Resource):
             "user_id": task.user_id
         }), 200
 
+    @jwt_required()
+    def delete(self, task_id):
+        user_id = get_jwt_identity()
+        task = Task.query.filter(
+            Task.id == task_id, Task.user_id == user_id).first()
+
+        if task is None:
+            return "Task not found", 404
+
+        os.remove("./{}".format(task.filename))
+
+        if task.status == "processed":
+            os.remove("./{}.{}".format(task.filename, task.new_format))
+
+        Task.query.filter(Task.id == task_id, Task.user_id == user_id).delete()
+        db.session.commit()
+        return
+    
+class FileResource(Resource):
+    @jwt_required()
+    def get(self, filename):
+        return send_file("./{}".format(filename), download_name=filename)
+
 
 api.add_resource(TasksResource, '/api/tasks')
 api.add_resource(TaskResource, '/api/tasks/<int:task_id>')
-
+api.add_resource(FileResource, '/api/files/<string:filename>')
 
 def return_app():
     return app
