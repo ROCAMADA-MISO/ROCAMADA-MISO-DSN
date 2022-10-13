@@ -14,6 +14,7 @@ app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DB_USERS_URI']
 app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET']
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = False
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -51,7 +52,6 @@ class SignUpResource(Resource):
 
         db.session.add(new_user)
         db.session.commit()
-        db.session.refresh(new_user)
 
         return {"message":"User created"}, 201
 
