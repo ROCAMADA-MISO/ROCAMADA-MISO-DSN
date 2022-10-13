@@ -70,7 +70,41 @@ class TasksResource(Resource):
         return {"message": "Tarea creada exitosamente"}, 200
 
 
+class TaskResource(Resource):
+    @jwt_required()
+    def put(self, task_id):
+        new_format = request.json['newFormat']
+        user_id = get_jwt_identity()
+        task = Task.query.filter(
+            Task.id == task_id, Task.user_id == user_id).first()
+
+        if task is None:
+            return "Task not found", 404
+        if task.new_format == new_format:
+            return "Nothing to do", 400
+
+        if task.status == "uploaded":
+            task.new_format = new_format
+            db.session.commit()
+        if task.status == "processed":
+            os.remove("./{}.{}".format(task.filename.split(".")[0],task.new_format))
+            
+            task.new_format = new_format
+            task.status = "uploaded"
+            db.session.commit()
+
+        return task_schema.dump({
+            "id": task.id,
+            "filename": task.filename,
+            "new_format": task.new_format,
+            "status": task.status,
+            "timestamp": task.timestamp,
+            "user_id": task.user_id
+        }), 200
+
+
 api.add_resource(TasksResource, '/api/tasks')
+api.add_resource(TaskResource, '/api/tasks/<int:task_id>')
 
 
 def return_app():
