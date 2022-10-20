@@ -79,15 +79,11 @@ class TasksResource(Resource):
             order = int(args.get('order'))
             limit = int(args.get('limit'))
         except ValueError:
-            print("That's not an int!")
+            return "Invalid parameters", 400
 
         if (order == 1):
-            print("#####ENTRO 1#####")
             user_id = get_jwt_identity()
-            print("User ID: ", user_id)
             task = Task.query.filter(Task.user_id == user_id).all()
-            for ta in task:
-                print("ID: ", ta.id)
         elif (order == 0):
             user_id = get_jwt_identity()
             task = Task.query.filter(Task.user_id == user_id).order_by(
