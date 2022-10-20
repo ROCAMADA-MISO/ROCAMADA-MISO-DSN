@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask import Flask, request, send_file
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+import json
 
 load_dotenv()
 
@@ -69,6 +70,36 @@ class TasksResource(Resource):
 
         return {"message": "Tarea creada exitosamente"}, 200
 
+    @jwt_required()
+    def get(self):
+        order = None
+        limit = None
+        args = request.args
+        try:
+            order = int(args.get('order'))
+            limit = int(args.get('limit'))
+        except ValueError:
+            print("That's not an int!")
+
+        if (order == 1):
+            print("#####ENTRO 1#####")
+            user_id = get_jwt_identity()
+            print("User ID: ", user_id)
+            task = Task.query.filter(Task.user_id == user_id).all()
+            for ta in task:
+                print("ID: ", ta.id)
+        elif (order == 0):
+            user_id = get_jwt_identity()
+            task = Task.query.filter(Task.user_id == user_id).order_by(
+                Task.id.asc()).limit(limit).all()
+        else:
+            return "Nothing to do", 400
+
+        if task is None:
+            return "Task not found", 404
+
+        return tasks_schema.dump(task, many=True), 200
+
 
 class TaskResource(Resource):
     @jwt_required()
@@ -120,7 +151,26 @@ class TaskResource(Resource):
         Task.query.filter(Task.id == task_id, Task.user_id == user_id).delete()
         db.session.commit()
         return
-    
+
+    @jwt_required()
+    def get(self, task_id):
+        user_id = get_jwt_identity()
+        task = Task.query.filter(
+            Task.id == task_id, Task.user_id == user_id).first()
+
+        if task is None:
+            return "Task not found", 404
+
+        return task_schema.dump({
+            "id": task.id,
+            "filename": task.filename,
+            "new_format": task.new_format,
+            "status": task.status,
+            "timestamp": task.timestamp,
+            "user_id": task.user_id
+        }), 200
+
+
 class FileResource(Resource):
     @jwt_required()
     def get(self, filename):
@@ -130,6 +180,7 @@ class FileResource(Resource):
 api.add_resource(TasksResource, '/api/tasks')
 api.add_resource(TaskResource, '/api/tasks/<int:task_id>')
 api.add_resource(FileResource, '/api/files/<string:filename>')
+
 
 def return_app():
     return app
