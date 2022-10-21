@@ -30,23 +30,38 @@ class Task(db.Model):
     timestamp = db.Column(db.DateTime(timezone=False))
     user_id = db.Column(db.Integer)
 
+class Flag(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    exceeded = db.Column(db.Boolean)
 
 class TaskSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         fields = ("id", "filename", "new_format",
                   "status", "timestamp", "user_id")
 
+class FlagSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        fields = ("id","exceeded")
+
 
 task_schema = TaskSchema()
 tasks_schema = TaskSchema(many=True)
+flag_schema = FlagSchema()
 
 with app.app_context():
     db.create_all()
+    if(len(Flag.query.all()) == 0):
+        task = Flag(exceeded=False)
+        db.session.add(task)
+        db.session.commit()
 
 
 class TasksResource(Resource):
     @jwt_required()
     def post(self):
+        flag = Flag.query.first()
+        if(flag.exceeded):
+            return "A file start processing time has exceeded 10 minutes", 400
         new_format = request.form['newFormat']
         file = request.files['fileName']
         user_id = get_jwt_identity()
