@@ -44,4 +44,20 @@ def send_email(userid):
         logger.info('Mail Finished ')
         return 'Email sent!'
     except:
-        return 'Something went wrong...'  
+        return 'Something went wrong...'
+    
+@app.task()
+def uploaded(filename):
+    logger.info('Conection to DB')
+    conn = psycopg2.connect(host=os.environ['DATABASE_HOST'],
+                            database=os.environ['DATABASE_DB'],
+                            user=os.environ['DATABASE_USER'],
+                            port=os.environ['DATABASE_PORT'],
+                            password=os.environ['DATABASE_PASSWORD'])
+    cur = conn.cursor()
+    cur.execute("UPDATE task SET status=(%s)"
+                " WHERE filename = (%s)", ("processed",filename,));
+    conn.commit()
+    cur.close()
+    logger.info('Updated task status')
+    return "Status updated"
