@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask import Flask, request, send_file
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+import json
 
 load_dotenv()
 
@@ -29,23 +30,38 @@ class Task(db.Model):
     timestamp = db.Column(db.DateTime(timezone=False))
     user_id = db.Column(db.Integer)
 
+class Flag(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    exceeded = db.Column(db.Boolean)
 
 class TaskSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         fields = ("id", "filename", "new_format",
                   "status", "timestamp", "user_id")
 
+class FlagSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        fields = ("id","exceeded")
+
 
 task_schema = TaskSchema()
 tasks_schema = TaskSchema(many=True)
+flag_schema = FlagSchema()
 
 with app.app_context():
     db.create_all()
+    if(len(Flag.query.all()) == 0):
+        task = Flag(exceeded=False)
+        db.session.add(task)
+        db.session.commit()
 
 
 class TasksResource(Resource):
     @jwt_required()
     def post(self):
+        flag = Flag.query.first()
+        if(flag.exceeded):
+            return "A file start processing time has exceeded 10 minutes", 400
         new_format = request.form['newFormat']
         file = request.files['fileName']
         user_id = get_jwt_identity()
@@ -68,6 +84,32 @@ class TasksResource(Resource):
         db.session.commit()
 
         return {"message": "Tarea creada exitosamente"}, 200
+
+    @jwt_required()
+    def get(self):
+        order = None
+        limit = None
+        args = request.args
+        try:
+            order = int(args.get('order'))
+            limit = int(args.get('limit'))
+        except ValueError:
+            return "Invalid parameters", 400
+
+        if (order == 1):
+            user_id = get_jwt_identity()
+            task = Task.query.filter(Task.user_id == user_id).all()
+        elif (order == 0):
+            user_id = get_jwt_identity()
+            task = Task.query.filter(Task.user_id == user_id).order_by(
+                Task.id.asc()).limit(limit).all()
+        else:
+            return "Nothing to do", 400
+
+        if task is None:
+            return "Task not found", 404
+
+        return tasks_schema.dump(task, many=True), 200
 
 
 class TaskResource(Resource):
@@ -120,7 +162,26 @@ class TaskResource(Resource):
         Task.query.filter(Task.id == task_id, Task.user_id == user_id).delete()
         db.session.commit()
         return
-    
+
+    @jwt_required()
+    def get(self, task_id):
+        user_id = get_jwt_identity()
+        task = Task.query.filter(
+            Task.id == task_id, Task.user_id == user_id).first()
+
+        if task is None:
+            return "Task not found", 404
+
+        return task_schema.dump({
+            "id": task.id,
+            "filename": task.filename,
+            "new_format": task.new_format,
+            "status": task.status,
+            "timestamp": task.timestamp,
+            "user_id": task.user_id
+        }), 200
+
+
 class FileResource(Resource):
     @jwt_required()
     def get(self, filename):
@@ -130,6 +191,7 @@ class FileResource(Resource):
 api.add_resource(TasksResource, '/api/tasks')
 api.add_resource(TaskResource, '/api/tasks/<int:task_id>')
 api.add_resource(FileResource, '/api/files/<string:filename>')
+
 
 def return_app():
     return app
