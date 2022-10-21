@@ -37,13 +37,11 @@ def audio_converter(filename,new_format,userid,timestamp):
 
 @app.task()
 def update_flag():
-    conn = psycopg2.connect(
-        host=os.environ['DB_HOST'],
-        port=os.environ['DB_PORT'],
-        database=os.environ['DB_DATABASE'],
-        user=os.environ['DB_USER'],
-        password=os.environ['DB_PASSWORD']
-    )
+    conn = psycopg2.connect(host='tasks-db',
+                            database='tasks',
+                            user='postgres',
+                            port=5432,
+                            password='postgres')
     cur = conn.cursor()
     cur.execute("UPDATE flag SET exceeded = true")
     conn.commit()
@@ -55,11 +53,11 @@ def update_flag():
 @app.task()
 def get_info_user(userid):
     logger.info('Conection to DB')
-    conn = psycopg2.connect(host=os.environ['DATABASE_HOST'],
+    conn = psycopg2.connect(host='users-db',
                             database="user",
-                            user=os.environ['DATABASE_USER'],
-                            port=5342,
-                            password=os.environ['DATABASE_PASSWORD'])
+                            user='postgres',
+                            port=5432,
+                            password='postgres')
     cur = conn.cursor()
     cur.execute("SELECT username, email FROM users WHERE id = %s", (userid,))
     info = cur.fetchone()
@@ -91,11 +89,11 @@ def send_email(mail, username,filename):
 @app.task()
 def upload_status(filename):
     logger.info('Conection to DB')
-    conn = psycopg2.connect(host=os.environ['DATABASE_HOST'],
-                            database=os.environ['DATABASE_DB'],
-                            user=os.environ['DATABASE_USER'],
-                            port=os.environ['DATABASE_PORT'],
-                            password=os.environ['DATABASE_PASSWORD'])
+    conn = psycopg2.connect(host='tasks-db',
+                            database='tasks',
+                            user='postgres',
+                            port=5432,
+                            password='postgres')
     cur = conn.cursor()
     cur.execute("UPDATE task SET status=(%s)"
                 " WHERE filename = (%s)", ("processed",filename,));
