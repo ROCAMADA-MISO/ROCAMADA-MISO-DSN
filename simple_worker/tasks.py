@@ -19,13 +19,11 @@ app = Celery('tasks', broker=os.environ['REDIS'], backend=os.environ['REDIS'])
 @app.task()
 def audio_converter(filename,new_format,userid,timestamp):
     logger.info('Got Request - Starting work ')
-    start=timestamp
-    logger.info('Tiempo '+str(timestamp))
-    logger.info('User '+userid)
+    start = timestamp
     done = time.time()
     elapsed = done - start
     if elapsed/60 > 10:
-        pass
+        update_flag.delay()
         return logger.info('Task took too long to complete '+ str(elapsed/60))
     src = "/simple_worker/data/"+filename
     dst = "/simple_worker/data/"+filename.split(".")[0] + "."+ new_format
@@ -36,6 +34,23 @@ def audio_converter(filename,new_format,userid,timestamp):
         send_email.delay(info[1],info[1],filename)
     upload_status.delay(filename)
     return "New Format is ready to be downloaded"
+
+@app.task()
+def update_flag():
+    conn = psycopg2.connect(
+        host=os.environ['DB_HOST'],
+        port=os.environ['DB_PORT'],
+        database=os.environ['DB_DATABASE'],
+        user=os.environ['DB_USER'],
+        password=os.environ['DB_PASSWORD']
+    )
+    cur = conn.cursor()
+    cur.execute("UPDATE flag SET exceeded = true")
+    conn.commit()
+    cur.close()
+    conn.close()
+    return "Flag updated"
+
 
 @app.task()
 def get_info_user(userid):

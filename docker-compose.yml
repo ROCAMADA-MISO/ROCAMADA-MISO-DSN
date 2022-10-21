@@ -26,7 +26,7 @@ services:
   tasks-db:
     image: postgres:14.5
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - ./db_tasks_data:/var/lib/postgresql/data
     environment:
