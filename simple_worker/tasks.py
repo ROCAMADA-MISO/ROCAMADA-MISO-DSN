@@ -3,7 +3,7 @@ import time
 import datetime
 from celery import Celery
 from celery.utils.log import get_task_logger
-from celery.schedules import crontab
+#from celery.schedules import crontab
 from pydub import AudioSegment
 from email.message import EmailMessage
 from dotenv import load_dotenv
@@ -14,15 +14,27 @@ load_dotenv()
 
 logger = get_task_logger(__name__)
 
-app = Celery('tasks', broker=os.environ['REDIS'], backend='redis://redis:6379/0')
+app = Celery('tasks', broker=os.environ['REDIS'], backend=os.environ['REDIS'])
 
 @app.task()
-def audio_converter(filename,new_format):
+def audio_converter(filename,new_format,userid,timestamp):
     logger.info('Got Request - Starting work ')
+    start=timestamp
+    logger.info('Tiempo '+str(timestamp))
+    logger.info('User '+userid)
+    done = time.time()
+    elapsed = done - start
+    if elapsed/60 > 10:
+        pass
+        return logger.info('Task took too long to complete '+ str(elapsed/60))
     src = "/simple_worker/data/"+filename
     dst = "/simple_worker/data/"+filename.split(".")[0] + "."+ new_format
     audio = AudioSegment.from_file(src)
     audio.export(dst, format=new_format)
+    if os.environ['EMAIL_SEND'] == 'True':
+        info = get_info_user.delay(userid)
+        send_email.delay(info[1],info[1],filename)
+    upload_status.delay(filename)
     return "New Format is ready to be downloaded"
 
 @app.task()
@@ -39,7 +51,6 @@ def get_info_user(userid):
     cur.close()
     logger.info('Info User, OK')    
     return info
-
 
 @app.task()
 def send_email(mail, username,filename):

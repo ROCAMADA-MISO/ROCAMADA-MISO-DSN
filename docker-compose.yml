@@ -4,6 +4,7 @@ x-var: &parameters
   JWT_SECRET: thisisasecret
   DB_TASKS_URI: postgresql://postgres@tasks-db:5432/tasks
   DB_USERS_URI: postgresql://postgres@users-db:5432/users
+  EMAIL_SEND: False
 services:
   redis:
     image: redis
@@ -18,6 +19,8 @@ services:
     depends_on:
       - redis
       - ms-tasks
+    environment:
+      <<: *parameters  
     volumes: 
       - shared-volume:/simple_worker/data:Z     
   tasks-db:
