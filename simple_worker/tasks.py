@@ -26,14 +26,30 @@ def audio_converter(filename,new_format):
     return "New Format is ready to be downloaded"
 
 @app.task()
-def send_email(userid):
+def get_info_user(userid):
+    logger.info('Conection to DB')
+    conn = psycopg2.connect(host=os.environ['DATABASE_HOST'],
+                            database="user",
+                            user=os.environ['DATABASE_USER'],
+                            port=5342,
+                            password=os.environ['DATABASE_PASSWORD'])
+    cur = conn.cursor()
+    cur.execute("SELECT username, email FROM users WHERE id = %s", (userid,))
+    info = cur.fetchone()
+    cur.close()
+    logger.info('Info User, OK')    
+    return info
+
+
+@app.task()
+def send_email(mail, username,filename):
     logger.info('Got Request - Starting work ')
     From = os.environ['FROM_EMAIL']
     To = os.environ['TO_EMAIL']
-    message = "¡Hola " + str(userid) + ", conversión de archivo terminada!"
+    message = "¡Hola " + str(username) + ", la conversión del archivo "+ filename + " está lista para descargar!"
     email = EmailMessage()
     email["From"] = From
-    email["To"] = To
+    email["To"] = mail
     email["Subject"] = "Correo de notificación"
     email.set_content(message)
     try:
@@ -47,7 +63,7 @@ def send_email(userid):
         return 'Something went wrong...'
     
 @app.task()
-def uploaded(filename):
+def upload_status(filename):
     logger.info('Conection to DB')
     conn = psycopg2.connect(host=os.environ['DATABASE_HOST'],
                             database=os.environ['DATABASE_DB'],
