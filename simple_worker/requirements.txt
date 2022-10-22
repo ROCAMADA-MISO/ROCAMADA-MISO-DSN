@@ -1,0 +1,4 @@
+celery[redis]
+pydub
+psycopg2-binary
+python-dotenv

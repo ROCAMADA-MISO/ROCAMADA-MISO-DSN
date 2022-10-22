@@ -1,6 +1,7 @@
 import os
 import time
 from datetime import datetime
+import datetime as dt
 from dotenv import load_dotenv
 from flask_restful import Api, Resource
 from flask_sqlalchemy import SQLAlchemy
@@ -8,13 +9,16 @@ from flask_marshmallow import Marshmallow
 from flask import Flask, request, send_file
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 import json
+from celery import Celery
 
 load_dotenv()
 
 app = Flask(__name__)
+simple = Celery('simple_worker', broker='redis://redis:6379/0', backend='redis://redis:6379/0')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DB_TASKS_URI']
 app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET']
+#app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -65,8 +69,8 @@ class TasksResource(Resource):
         new_format = request.form['newFormat']
         file = request.files['fileName']
         user_id = get_jwt_identity()
-
-        timestr = time.strftime("%Y%m%d-%H%M%S")
+        start = time.time()
+        timestr = dt.datetime.fromtimestamp(start).strftime('%Y%m%d-%H%M%S')
         filename = file.filename.split(".")[0]
         format = file.filename.split(".")[1]
         filename = "{}_{}.{}".format(filename, timestr, format)
@@ -82,6 +86,13 @@ class TasksResource(Resource):
 
         db.session.add(new_task)
         db.session.commit()
+        app.logger.info("Invoking task audio_converter")
+        r = simple.send_task('tasks.audio_converter', kwargs={'filename': filename, 
+                                                              'new_format': new_format,
+                                                              'userid': user_id,
+                                                              'timestamp': start
+                                                              })
+        app.logger.info(r.backend)
 
         return {"message": "Tarea creada exitosamente"}, 200
 
