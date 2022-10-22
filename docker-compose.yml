@@ -4,7 +4,7 @@ x-var: &parameters
   JWT_SECRET: thisisasecret
   DB_TASKS_URI: postgresql://postgres@tasks-db:5432/tasks
   DB_USERS_URI: postgresql://postgres@users-db:5432/users
-  EMAIL_SEND: False
+  EMAIL_SEND: 'True'
 services:
   redis:
     image: redis
@@ -45,6 +45,7 @@ services:
     environment:
       <<: *parameters
     depends_on:
+      - redis
       - tasks-db
   users-db:
     image: postgres:14.5

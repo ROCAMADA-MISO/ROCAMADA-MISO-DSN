@@ -18,6 +18,7 @@ simple = Celery('simple_worker', broker='redis://redis:6379/0', backend='redis:/
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DB_TASKS_URI']
 app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET']
+#app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)

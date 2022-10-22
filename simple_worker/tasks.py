@@ -1,6 +1,7 @@
 import os
 import time
 import datetime
+import json
 from celery import Celery
 from celery.utils.log import get_task_logger
 #from celery.schedules import crontab
@@ -14,7 +15,7 @@ load_dotenv()
 
 logger = get_task_logger(__name__)
 
-app = Celery('tasks', broker=os.environ['REDIS'], backend=os.environ['REDIS'])
+app = Celery('tasks', broker='redis://redis:6379/0', backend='redis://redis:6379/0')
 
 @app.task()
 def audio_converter(filename,new_format,userid,timestamp):
@@ -30,10 +31,11 @@ def audio_converter(filename,new_format,userid,timestamp):
     audio = AudioSegment.from_file(src)
     audio.export(dst, format=new_format)
     if os.environ['EMAIL_SEND'] == 'True':
-        info = get_info_user.delay(userid)
-        send_email.delay(info[1],info[1],filename)
+        msn = get_info_user.delay(userid)
+        send_email.delay(filename)
     upload_status.delay(filename)
     return "New Format is ready to be downloaded"
+    
 
 @app.task()
 def update_flag():
@@ -54,26 +56,29 @@ def update_flag():
 def get_info_user(userid):
     logger.info('Conection to DB')
     conn = psycopg2.connect(host='users-db',
-                            database="user",
+                            database="users",
                             user='postgres',
                             port=5432,
                             password='postgres')
     cur = conn.cursor()
-    cur.execute("SELECT username, email FROM users WHERE id = %s", (userid,))
+    cur.execute('SELECT username, email FROM "user" WHERE id = %s',[userid])
     info = cur.fetchone()
     cur.close()
     logger.info('Info User, OK')    
     return info
 
 @app.task()
-def send_email(mail, username,filename):
+def send_email(filename):
     logger.info('Got Request - Starting work ')
     From = os.environ['FROM_EMAIL']
     To = os.environ['TO_EMAIL']
+    #info=json.dumps(list(msn))
+    #print(info)
+    username = 'Roberto'
     message = "¡Hola " + str(username) + ", la conversión del archivo "+ filename + " está lista para descargar!"
     email = EmailMessage()
     email["From"] = From
-    email["To"] = mail
+    email["To"] = To
     email["Subject"] = "Correo de notificación"
     email.set_content(message)
     try:
