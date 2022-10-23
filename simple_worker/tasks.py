@@ -73,7 +73,7 @@ def send_email(filename, email, username):
     logger.info('Got Request - Starting work ')
     From = os.environ['FROM_EMAIL']
     To = email
-    message = "¡Hola " + str(username) + ", la conversión del archivo "+ filename + " está lista para descargar!"
+    message = "¡Hola " + str(username) + ", la conversión del archivo "+ filename + " está listo para descargar!"
     email = EmailMessage()
     email["From"] = From
     email["To"] = To
