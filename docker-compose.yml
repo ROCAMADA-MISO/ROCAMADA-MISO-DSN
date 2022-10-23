@@ -4,8 +4,9 @@ x-var: &parameters
   JWT_SECRET: thisisasecret
   DB_TASKS_URI: postgresql://postgres@tasks-db:5432/tasks
   DB_USERS_URI: postgresql://postgres@users-db:5432/users
-  EMAIL_SEND: 'True'
+  EMAIL_SEND: 'False'
   FROM_EMAIL: 'conversor3000@gmail.com'
+  TO_EMAIL: 'w.parrav@uniandes.edu.co'
   REDIS: redis://redis:6379/0
   EMAIL_PASSWORD: mtvmoqhbpnvgwnkw
 services:

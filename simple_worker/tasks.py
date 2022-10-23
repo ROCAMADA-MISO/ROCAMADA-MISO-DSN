@@ -7,15 +7,24 @@ from celery.utils.log import get_task_logger
 #from celery.schedules import crontab
 from pydub import AudioSegment
 from email.message import EmailMessage
-from dotenv import load_dotenv
 import smtplib
 import psycopg2
 
-load_dotenv()
 
 logger = get_task_logger(__name__)
 
 app = Celery('tasks', broker='redis://redis:6379/0', backend='redis://redis:6379/0')
+conn = psycopg2.connect(host='tasks-db',
+                            database='tasks',
+                            user='postgres',
+                            port=5432,
+                            password='postgres')
+conn2 = psycopg2.connect(host='users-db',
+                            database="users",
+                            user='postgres',
+                            port=5432,
+                            password='postgres')
+
 
 @app.task()
 def audio_converter(filename,new_format,userid,timestamp):
@@ -38,32 +47,23 @@ def audio_converter(filename,new_format,userid,timestamp):
 
 @app.task()
 def update_flag():
-    conn = psycopg2.connect(host='tasks-db',
-                            database='tasks',
-                            user='postgres',
-                            port=5432,
-                            password='postgres')
     cur = conn.cursor()
     cur.execute("UPDATE flag SET exceeded = true")
     conn.commit()
     cur.close()
-    conn.close()
+    #conn.close()
     return "Flag updated"
 
 
 @app.task()
 def get_info_user(userid, filename):
     logger.info('Conection to DB')
-    conn = psycopg2.connect(host='users-db',
-                            database="users",
-                            user='postgres',
-                            port=5432,
-                            password='postgres')
-    cur = conn.cursor()
+    
+    cur = conn2.cursor()
     cur.execute('SELECT username, email FROM "user" WHERE id = %s',[userid])
     info = cur.fetchone()
     cur.close()
-    conn.close()
+    #conn.close()
     logger.info('Info User, OK')    
     send_email.delay(filename, info[1], info[0])
     return info
@@ -92,16 +92,11 @@ def send_email(filename, email, username):
 @app.task()
 def upload_status(filename):
     logger.info('Conection to DB')
-    conn = psycopg2.connect(host='tasks-db',
-                            database='tasks',
-                            user='postgres',
-                            port=5432,
-                            password='postgres')
     cur = conn.cursor()
     cur.execute("UPDATE task SET status=(%s)"
                 " WHERE filename = (%s)", ("processed",filename,));
     conn.commit()
     cur.close()
-    conn.close()
+    #conn.close()
     logger.info('Updated task status')
     return "Status updated"
