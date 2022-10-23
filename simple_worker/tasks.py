@@ -31,8 +31,7 @@ def audio_converter(filename,new_format,userid,timestamp):
     audio = AudioSegment.from_file(src)
     audio.export(dst, format=new_format)
     if os.environ['EMAIL_SEND'] == 'True':
-        msn = get_info_user.delay(userid)
-        send_email.delay(filename)
+        msn = get_info_user.delay(userid, filename)
     upload_status.delay(filename)
     return "New Format is ready to be downloaded"
     
@@ -53,7 +52,7 @@ def update_flag():
 
 
 @app.task()
-def get_info_user(userid):
+def get_info_user(userid, filename):
     logger.info('Conection to DB')
     conn = psycopg2.connect(host='users-db',
                             database="users",
@@ -64,17 +63,16 @@ def get_info_user(userid):
     cur.execute('SELECT username, email FROM "user" WHERE id = %s',[userid])
     info = cur.fetchone()
     cur.close()
+    conn.close()
     logger.info('Info User, OK')    
+    send_email.delay(filename, info[1], info[0])
     return info
 
 @app.task()
-def send_email(filename):
+def send_email(filename, email, username):
     logger.info('Got Request - Starting work ')
     From = os.environ['FROM_EMAIL']
-    To = os.environ['TO_EMAIL']
-    #info=json.dumps(list(msn))
-    #print(info)
-    username = 'Roberto'
+    To = email
     message = "¡Hola " + str(username) + ", la conversión del archivo "+ filename + " está lista para descargar!"
     email = EmailMessage()
     email["From"] = From
@@ -104,5 +102,6 @@ def upload_status(filename):
                 " WHERE filename = (%s)", ("processed",filename,));
     conn.commit()
     cur.close()
+    conn.close()
     logger.info('Updated task status')
     return "Status updated"
