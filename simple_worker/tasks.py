@@ -4,6 +4,7 @@ import datetime
 import json
 from celery import Celery
 from celery.utils.log import get_task_logger
+from celery.signals import worker_process_init, worker_process_shutdown
 #from celery.schedules import crontab
 from pydub import AudioSegment
 from email.message import EmailMessage
@@ -14,16 +15,25 @@ import psycopg2
 logger = get_task_logger(__name__)
 
 app = Celery('tasks', broker='redis://redis:6379/0', backend='redis://redis:6379/0')
-conn = psycopg2.connect(host='tasks-db',
+
+conn = None
+conn2 =None
+
+@worker_process_init.connect
+def init_worker(**kwargs):
+    global conn, conn2
+    print('Initializing database connection for worker.')
+    conn = psycopg2.connect(host='tasks-db',
                             database='tasks',
                             user='postgres',
                             port=5432,
                             password='postgres')
-conn2 = psycopg2.connect(host='users-db',
+    conn2 = psycopg2.connect(host='users-db',
                             database="users",
                             user='postgres',
                             port=5432,
                             password='postgres')
+
 
 
 @app.task()
@@ -100,3 +110,12 @@ def upload_status(filename):
     #conn.close()
     logger.info('Updated task status')
     return "Status updated"
+
+
+@worker_process_shutdown.connect
+def shutdown_worker(**kwargs):
+    global conn, conn2
+    if conn:
+        print('Closing database connectionn for worker.')
+        conn.close()
+        conn2.close()
