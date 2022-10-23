@@ -64,6 +64,7 @@ def get_info_user(userid):
     cur.execute('SELECT username, email FROM "user" WHERE id = %s',[userid])
     info = cur.fetchone()
     cur.close()
+    conn.close()
     logger.info('Info User, OK')    
     return info
 
@@ -104,5 +105,6 @@ def upload_status(filename):
                 " WHERE filename = (%s)", ("processed",filename,));
     conn.commit()
     cur.close()
+    conn.close()
     logger.info('Updated task status')
     return "Status updated"
