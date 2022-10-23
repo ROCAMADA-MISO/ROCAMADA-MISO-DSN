@@ -7,11 +7,9 @@ from celery.utils.log import get_task_logger
 #from celery.schedules import crontab
 from pydub import AudioSegment
 from email.message import EmailMessage
-from dotenv import load_dotenv
 import smtplib
 import psycopg2
 
-load_dotenv()
 
 logger = get_task_logger(__name__)
 
@@ -76,7 +74,7 @@ def send_email(filename):
     #info=json.dumps(list(msn))
     #print(info)
     username = 'Roberto'
-    message = "¡Hola " + str(username) + ", la conversión del archivo "+ filename + " está lista para descargar!"
+    message = "¡Hola " + str(username) + ", la conversión del archivo "+ filename + " está listo para descargar!"
     email = EmailMessage()
     email["From"] = From
     email["To"] = To
