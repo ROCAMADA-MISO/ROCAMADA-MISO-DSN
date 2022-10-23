@@ -151,6 +151,12 @@ class TaskResource(Resource):
             task.new_format = new_format
             task.status = "uploaded"
             db.session.commit()
+            r = simple.send_task('tasks.audio_converter', kwargs={'filename': task.filename,
+                                                              'new_format': new_format,
+                                                              'userid': user_id,
+                                                              'timestamp': time.time()
+                                                              })
+            app.logger.info(r.backend)
 
         return task_schema.dump({
             "id": task.id,
