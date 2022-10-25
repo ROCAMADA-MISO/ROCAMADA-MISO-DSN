@@ -14,12 +14,15 @@ from celery import Celery
 load_dotenv()
 
 app = Flask(__name__)
-simple = Celery('simple_worker', broker='redis://redis:6379/0',
-                backend='redis://redis:6379/0')
+redis_host = os.environ['REDIS_HOST']
+redis_uri = "redis://{}:6379/0".format(redis_host)
+simple = Celery('simple_worker', broker=redis_uri,
+                backend=redis_uri)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DB_TASKS_URI']
+db_uri = "postgresql://{}:{}@{}:5432/tasks".format(os.environ['DB_USER'], os.environ['DB_PASSWORD'], os.environ['DB_HOST'])
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET']
-#app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -217,3 +220,4 @@ api.add_resource(FileResource, '/api/files/<string:filename>')
 
 def return_app():
     return app
+

@@ -2,9 +2,10 @@ version: "3.4"
 
 x-var: &parameters
   JWT_SECRET: thisisasecret
-  DB_TASKS_URI: postgresql://postgres@tasks-db:5432/tasks
-  DB_USERS_URI: postgresql://postgres@users-db:5432/users
-  REDIS: redis://redis:6379/0
+  DB_USER: ''
+  DB_PASSWORD: ''
+  DB_HOST: ''
+  REDIS_HOST: redis
 services:
   redis:
     image: redis

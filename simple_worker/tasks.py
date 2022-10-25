@@ -13,8 +13,12 @@ import psycopg2
 
 
 logger = get_task_logger(__name__)
-
-app = Celery('tasks', broker='redis://redis:6379/0', backend='redis://redis:6379/0')
+redis_host = os.environ['REDIS_HOST']
+redis_uri = "redis://{}:6379/0".format(redis_host)
+app = Celery('tasks', broker=redis_uri, backend=redis_uri)
+db_host = os.environ['DB_HOST']
+db_user = os.environ['DB_USER']
+db_password = os.environ['DB_PASSWORD']
 
 conn = None
 conn2 =None
@@ -23,16 +27,16 @@ conn2 =None
 def init_worker(**kwargs):
     global conn, conn2
     print('Initializing database connection for worker.')
-    conn = psycopg2.connect(host='tasks-db',
+    conn = psycopg2.connect(host=db_host,
                             database='tasks',
-                            user='postgres',
+                            user=db_user,
                             port=5432,
-                            password='postgres')
-    conn2 = psycopg2.connect(host='users-db',
+                            password=db_password)
+    conn2 = psycopg2.connect(host=db_host,
                             database="users",
-                            user='postgres',
+                            user=db_user,
                             port=5432,
-                            password='postgres')
+                            password=db_password)
 
 
 
