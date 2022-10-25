@@ -4,18 +4,37 @@ import datetime
 import json
 from celery import Celery
 from celery.utils.log import get_task_logger
+from celery.signals import worker_process_init, worker_process_shutdown
 #from celery.schedules import crontab
 from pydub import AudioSegment
 from email.message import EmailMessage
-from dotenv import load_dotenv
 import smtplib
 import psycopg2
 
-load_dotenv()
 
 logger = get_task_logger(__name__)
 
 app = Celery('tasks', broker='redis://redis:6379/0', backend='redis://redis:6379/0')
+
+conn = None
+conn2 =None
+
+@worker_process_init.connect
+def init_worker(**kwargs):
+    global conn, conn2
+    print('Initializing database connection for worker.')
+    conn = psycopg2.connect(host='tasks-db',
+                            database='tasks',
+                            user='postgres',
+                            port=5432,
+                            password='postgres')
+    conn2 = psycopg2.connect(host='users-db',
+                            database="users",
+                            user='postgres',
+                            port=5432,
+                            password='postgres')
+
+
 
 @app.task()
 def audio_converter(filename,new_format,userid,timestamp):
@@ -31,51 +50,40 @@ def audio_converter(filename,new_format,userid,timestamp):
     audio = AudioSegment.from_file(src)
     audio.export(dst, format=new_format)
     if os.environ['EMAIL_SEND'] == 'True':
-        msn = get_info_user.delay(userid)
-        send_email.delay(filename)
+        msn = get_info_user.delay(userid, filename)
     upload_status.delay(filename)
     return "New Format is ready to be downloaded"
     
 
 @app.task()
 def update_flag():
-    conn = psycopg2.connect(host='tasks-db',
-                            database='tasks',
-                            user='postgres',
-                            port=5432,
-                            password='postgres')
     cur = conn.cursor()
     cur.execute("UPDATE flag SET exceeded = true")
     conn.commit()
     cur.close()
-    conn.close()
+    #conn.close()
     return "Flag updated"
 
 
 @app.task()
-def get_info_user(userid):
+def get_info_user(userid, filename):
     logger.info('Conection to DB')
-    conn = psycopg2.connect(host='users-db',
-                            database="users",
-                            user='postgres',
-                            port=5432,
-                            password='postgres')
-    cur = conn.cursor()
+    
+    cur = conn2.cursor()
     cur.execute('SELECT username, email FROM "user" WHERE id = %s',[userid])
     info = cur.fetchone()
     cur.close()
+    #conn.close()
     logger.info('Info User, OK')    
+    send_email.delay(filename, info[1], info[0])
     return info
 
 @app.task()
-def send_email(filename):
+def send_email(filename, email, username):
     logger.info('Got Request - Starting work ')
     From = os.environ['FROM_EMAIL']
-    To = os.environ['TO_EMAIL']
-    #info=json.dumps(list(msn))
-    #print(info)
-    username = 'Roberto'
-    message = "¡Hola " + str(username) + ", la conversión del archivo "+ filename + " está lista para descargar!"
+    To = email
+    message = "¡Hola " + str(username) + ", la conversión del archivo "+ filename + " está listo para descargar!"
     email = EmailMessage()
     email["From"] = From
     email["To"] = To
@@ -94,15 +102,20 @@ def send_email(filename):
 @app.task()
 def upload_status(filename):
     logger.info('Conection to DB')
-    conn = psycopg2.connect(host='tasks-db',
-                            database='tasks',
-                            user='postgres',
-                            port=5432,
-                            password='postgres')
     cur = conn.cursor()
     cur.execute("UPDATE task SET status=(%s)"
                 " WHERE filename = (%s)", ("processed",filename,));
     conn.commit()
     cur.close()
+    #conn.close()
     logger.info('Updated task status')
     return "Status updated"
+
+
+@worker_process_shutdown.connect
+def shutdown_worker(**kwargs):
+    global conn, conn2
+    if conn:
+        print('Closing database connectionn for worker.')
+        conn.close()
+        conn2.close()

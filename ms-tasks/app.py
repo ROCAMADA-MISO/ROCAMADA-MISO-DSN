@@ -14,7 +14,8 @@ from celery import Celery
 load_dotenv()
 
 app = Flask(__name__)
-simple = Celery('simple_worker', broker='redis://redis:6379/0', backend='redis://redis:6379/0')
+simple = Celery('simple_worker', broker='redis://redis:6379/0',
+                backend='redis://redis:6379/0')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DB_TASKS_URI']
 app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET']
@@ -34,18 +35,21 @@ class Task(db.Model):
     timestamp = db.Column(db.DateTime(timezone=False))
     user_id = db.Column(db.Integer)
 
+
 class Flag(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     exceeded = db.Column(db.Boolean)
+
 
 class TaskSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         fields = ("id", "filename", "new_format",
                   "status", "timestamp", "user_id")
 
+
 class FlagSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        fields = ("id","exceeded")
+        fields = ("id", "exceeded")
 
 
 task_schema = TaskSchema()
@@ -54,7 +58,7 @@ flag_schema = FlagSchema()
 
 with app.app_context():
     db.create_all()
-    if(len(Flag.query.all()) == 0):
+    if (len(Flag.query.all()) == 0):
         task = Flag(exceeded=False)
         db.session.add(task)
         db.session.commit()
@@ -64,7 +68,7 @@ class TasksResource(Resource):
     @jwt_required()
     def post(self):
         flag = Flag.query.first()
-        if(flag.exceeded):
+        if (flag.exceeded):
             return "A file start processing time has exceeded 10 minutes", 400
         new_format = request.form['newFormat']
         file = request.files['fileName']
@@ -87,7 +91,7 @@ class TasksResource(Resource):
         db.session.add(new_task)
         db.session.commit()
         app.logger.info("Invoking task audio_converter")
-        r = simple.send_task('tasks.audio_converter', kwargs={'filename': filename, 
+        r = simple.send_task('tasks.audio_converter', kwargs={'filename': filename,
                                                               'new_format': new_format,
                                                               'userid': user_id,
                                                               'timestamp': start
@@ -109,7 +113,8 @@ class TasksResource(Resource):
 
         if (order == 1):
             user_id = get_jwt_identity()
-            task = Task.query.filter(Task.user_id == user_id).all()
+            task = Task.query.filter(Task.user_id == user_id).order_by(
+                Task.id.desc()).limit(limit).all()
         elif (order == 0):
             user_id = get_jwt_identity()
             task = Task.query.filter(Task.user_id == user_id).order_by(
@@ -146,6 +151,12 @@ class TaskResource(Resource):
             task.new_format = new_format
             task.status = "uploaded"
             db.session.commit()
+            r = simple.send_task('tasks.audio_converter', kwargs={'filename': task.filename,
+                                                              'new_format': new_format,
+                                                              'userid': user_id,
+                                                              'timestamp': time.time()
+                                                              })
+            app.logger.info(r.backend)
 
         return task_schema.dump({
             "id": task.id,
