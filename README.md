@@ -16,3 +16,5 @@ Adicionalmente, ejecutar `flask --app app.py --debug run` adentro del directorio
 
 ### Despliegue
 Ejecutar `docker-compose build` y luego `docker-compose up` sobre la raíz del proyecto. Esto levantará los servidores WSGI Gunicorn junto con nginx para el procesamiento y redireccionamiento de peticiones.
+
+Si se desea ejecutar únicamente algún archivo de docker-compose, ejecutar el siguiente comando `docker-compose -f <file_name> <command>`

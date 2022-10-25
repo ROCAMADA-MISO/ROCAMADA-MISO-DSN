@@ -1,0 +1,16 @@
+version: "3.4"
+
+x-var: &parameters
+  DB_TASKS_URI: postgresql://postgres@tasks-db:5432/tasks
+  DB_USERS_URI: postgresql://postgres@users-db:5432/users
+  EMAIL_SEND: 'True'
+  FROM_EMAIL: 'conversor3000@gmail.com'
+  REDIS: redis://redis:6379/0
+  EMAIL_PASSWORD: mtvmoqhbpnvgwnkw
+services:
+  simple_worker:
+    platform: linux/amd64
+    build: ./simple_worker
+    user: root
+    environment:
+      <<: *parameters  
