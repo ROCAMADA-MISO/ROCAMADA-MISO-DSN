@@ -5,9 +5,9 @@ x-var: &parameters
   FROM_EMAIL: 'conversor3000@gmail.com'
   EMAIL_PASSWORD: mtvmoqhbpnvgwnkw
   REDIS_HOST: 10.128.0.2
-  DB_HOST: ''
-  DB_USER: ''
-  DB_PASSWORD: ''
+  DB_HOST: 10.20.224.3
+  DB_USER: postgres
+  DB_PASSWORD: cloudg14
 services:
   simple_worker:
     platform: linux/amd64
