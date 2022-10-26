@@ -2,9 +2,9 @@ version: "3.4"
 
 x-var: &parameters
   JWT_SECRET: thisisasecret
-  DB_USER: postgres
-  DB_PASSWORD: cloudg14
-  DB_HOST: 34.72.75.65
+  DB_USER: ''
+  DB_PASSWORD: ''
+  DB_HOST: ''
   REDIS_HOST: redis
 services:
   redis:
