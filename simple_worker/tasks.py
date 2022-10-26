@@ -49,8 +49,8 @@ def audio_converter(filename,new_format,userid,timestamp):
     if elapsed/60 > 10:
         update_flag.delay()
         return logger.info('Task took too long to complete '+ str(elapsed/60))
-    src = "/simple_worker/data/"+filename
-    dst = "/simple_worker/data/"+filename.split(".")[0] + "."+ new_format
+    src = "/simple_worker/files/"+filename
+    dst = "/simple_worker/files/"+filename.split(".")[0] + "."+ new_format
     audio = AudioSegment.from_file(src)
     audio.export(dst, format=new_format)
     if os.environ['EMAIL_SEND'] == 'True':
