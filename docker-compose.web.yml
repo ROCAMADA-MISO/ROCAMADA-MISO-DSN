@@ -2,9 +2,9 @@ version: "3.4"
 
 x-var: &parameters
   JWT_SECRET: thisisasecret
-  DB_USER: ''
-  DB_PASSWORD: ''
-  DB_HOST: ''
+  DB_USER: postgres
+  DB_PASSWORD: cloudg14
+  DB_HOST: 34.68.252.15
   REDIS_HOST: redis
 services:
   redis:
@@ -16,6 +16,7 @@ services:
   ms-tasks:
     volumes:
         - ./ms-tasks/:/mnt/
+        - ../shared-files/:/backend/files/
     build: ./ms-tasks
     working_dir: /backend/
     command: "gunicorn -b 0.0.0.0:5000 'app:return_app()'"

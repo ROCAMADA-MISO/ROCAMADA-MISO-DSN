@@ -81,7 +81,7 @@ class TasksResource(Resource):
         filename = file.filename.split(".")[0]
         format = file.filename.split(".")[1]
         filename = "{}_{}.{}".format(filename, timestr, format)
-        file.save(filename)
+        file.save("./files/{}".format(filename))
 
         new_task = Task(
             filename=filename,
