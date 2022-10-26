@@ -182,7 +182,7 @@ class TaskResource(Resource):
         os.remove("./files/{}".format(task.filename))
 
         if task.status == "processed":
-            os.remove("./files/{}.{}".format(task.filename, task.new_format))
+            os.remove("./files/{}.{}".format(task.filename.split('.')[0], task.new_format))
 
         Task.query.filter(Task.id == task_id, Task.user_id == user_id).delete()
         db.session.commit()
