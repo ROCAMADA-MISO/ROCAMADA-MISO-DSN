@@ -149,7 +149,7 @@ class TaskResource(Resource):
             db.session.commit()
         if task.status == "processed":
             os.remove(
-                "./{}.{}".format(task.filename.split(".")[0], task.new_format))
+                "./files/{}.{}".format(task.filename.split(".")[0], task.new_format))
 
             task.new_format = new_format
             task.status = "uploaded"
@@ -179,10 +179,10 @@ class TaskResource(Resource):
         if task is None:
             return "Task not found", 404
 
-        os.remove("./{}".format(task.filename))
+        os.remove("./files/{}".format(task.filename))
 
         if task.status == "processed":
-            os.remove("./{}.{}".format(task.filename, task.new_format))
+            os.remove("./files/{}.{}".format(task.filename, task.new_format))
 
         Task.query.filter(Task.id == task_id, Task.user_id == user_id).delete()
         db.session.commit()
@@ -210,7 +210,7 @@ class TaskResource(Resource):
 class FileResource(Resource):
     @jwt_required()
     def get(self, filename):
-        return send_file("./{}".format(filename), download_name=filename)
+        return send_file("./files/{}".format(filename), download_name=filename)
 
 
 api.add_resource(TasksResource, '/api/tasks')
