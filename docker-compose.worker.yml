@@ -4,14 +4,16 @@ x-var: &parameters
   EMAIL_SEND: 'True'
   FROM_EMAIL: 'conversor3000@gmail.com'
   EMAIL_PASSWORD: mtvmoqhbpnvgwnkw
-  REDIS_HOST: ''
-  DB_HOST: ''
-  DB_USER: ''
-  DB_PASSWORD: ''
+  REDIS_HOST: 10.128.0.2
+  DB_HOST: 34.72.75.65
+  DB_USER: postgres
+  DB_PASSWORD: cloudg14
 services:
   simple_worker:
     platform: linux/amd64
     build: ./simple_worker
     user: root
+    volumes:
+      - ../shared-files/:/simple_worker/files/
     environment:
       <<: *parameters  
