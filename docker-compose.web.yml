@@ -4,7 +4,7 @@ x-var: &parameters
   JWT_SECRET: thisisasecret
   DB_USER: postgres
   DB_PASSWORD: cloudg14
-  DB_HOST: 34.68.252.15
+  DB_HOST: 34.72.75.65
   REDIS_HOST: redis
 services:
   redis:
