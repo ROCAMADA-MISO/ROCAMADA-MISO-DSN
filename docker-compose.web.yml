@@ -18,7 +18,7 @@ services:
         - ./ms-tasks/:/mnt/
     build: ./ms-tasks
     working_dir: /backend/
-    command: gunicorn -b 0.0.0.0:5000 'app:return_app()'"
+    command: "gunicorn -b 0.0.0.0:5000 'app:return_app()'"
     ports:
       - "5000:5000"
     restart: on-failure
@@ -31,7 +31,7 @@ services:
         - ./ms-auth/:/mnt/
     build: ./ms-auth
     working_dir: /backend/
-    command: gunicorn -b 0.0.0.0:5000 'app:return_app()'"
+    command: "gunicorn -b 0.0.0.0:5000 'app:return_app()'"
     ports:
       - "5001:5000"
     restart: on-failure
