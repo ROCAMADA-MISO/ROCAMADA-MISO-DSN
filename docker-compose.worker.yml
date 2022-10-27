@@ -1,9 +1,10 @@
 version: "3.4"
 
 x-var: &parameters
-  EMAIL_SEND: 'True'
+  EMAIL_SEND: 'False'
   FROM_EMAIL: 'conversor3000@gmail.com'
-  EMAIL_PASSWORD: mtvmoqhbpnvgwnkw
+  SANDBOX: ''
+  KEY: ''
   REDIS_HOST: 10.128.0.2
   DB_HOST: 10.20.224.3
   DB_USER: postgres

@@ -5,10 +5,8 @@ import json
 from celery import Celery
 from celery.utils.log import get_task_logger
 from celery.signals import worker_process_init, worker_process_shutdown
-#from celery.schedules import crontab
 from pydub import AudioSegment
-from email.message import EmailMessage
-import smtplib
+import requests
 import psycopg2
 
 
@@ -21,7 +19,7 @@ db_user = os.environ['DB_USER']
 db_password = os.environ['DB_PASSWORD']
 
 conn = None
-conn2 =None
+conn2 = None
 
 @worker_process_init.connect
 def init_worker(**kwargs):
@@ -65,7 +63,6 @@ def update_flag():
     cur.execute("UPDATE flag SET exceeded = true")
     conn.commit()
     cur.close()
-    #conn.close()
     return "Flag updated"
 
 
@@ -77,7 +74,6 @@ def get_info_user(userid, filename):
     cur.execute('SELECT username, email FROM "user" WHERE id = %s',[userid])
     info = cur.fetchone()
     cur.close()
-    #conn.close()
     logger.info('Info User, OK')    
     send_email.delay(filename, info[1], info[0])
     return info
@@ -85,24 +81,26 @@ def get_info_user(userid, filename):
 @app.task()
 def send_email(filename, email, username):
     logger.info('Got Request - Starting work ')
-    From = os.environ['FROM_EMAIL']
-    To = email
-    message = "¡Hola " + str(username) + ", la conversión del archivo "+ filename + " está listo para descargar!"
-    email = EmailMessage()
-    email["From"] = From
-    email["To"] = To
-    email["Subject"] = "Correo de notificación"
-    email.set_content(message)
-    try:
-        smtp = smtplib.SMTP_SSL("smtp.gmail.com")
-        smtp.login(From, os.environ['EMAIL_PASSWORD'])
-        smtp.sendmail(From, To, email.as_string())
-        smtp.quit()
-        logger.info('Mail Finished ')
+    SANDBOX = os.environ[SANDBOX]
+    FROM = os.environ[FROM_EMAIL]
+    KEY = os.environ[KEY]
+    request_url = f'https://api.mailgun.net/v3/{SANDBOX}/messages'
+    message = f'Hola {username}, la conversión del archivo {filename} está listo para ser descargado!'
+    From = f'{FROM} <postmaster@{SANDBOX}>'
+    request = requests.post(request_url,
+                            auth=('api', KEY),
+                            data={
+                                'from': From,
+                                'to': email,
+                                'subject': 'Correo de notificación',
+                                'text': message})
+    logger.info('Mail Finished ')
+    if request.status_code == 200:
         return 'Email sent!'
-    except:
-        return 'Something went wrong...'
-    
+    else:
+        return 'Something went wrong...' 
+
+
 @app.task()
 def upload_status(filename):
     logger.info('Conection to DB')
@@ -111,7 +109,6 @@ def upload_status(filename):
                 " WHERE filename = (%s)", ("processed",filename,));
     conn.commit()
     cur.close()
-    #conn.close()
     logger.info('Updated task status')
     return "Status updated"
 
