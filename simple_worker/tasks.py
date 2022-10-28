@@ -107,6 +107,7 @@ def upload_status(filename):
     cur = conn.cursor()
     cur.execute("UPDATE task SET status=(%s)"
                 " WHERE filename = (%s)", ("processed",filename,));
+    cur.execute("UPDATE task SET processed_at=(%s) WHERE filename = (%s)", (time.time(), filename))
     conn.commit()
     cur.close()
     logger.info('Updated task status')

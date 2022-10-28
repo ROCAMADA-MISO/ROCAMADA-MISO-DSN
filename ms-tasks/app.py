@@ -37,6 +37,7 @@ class Task(db.Model):
     status = db.Column(db.String(15))
     timestamp = db.Column(db.DateTime(timezone=False))
     user_id = db.Column(db.Integer)
+    processed_at = db.Column(db.DateTime(timezone=False))
 
 
 class Flag(db.Model):
@@ -47,7 +48,7 @@ class Flag(db.Model):
 class TaskSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         fields = ("id", "filename", "new_format",
-                  "status", "timestamp", "user_id")
+                  "status", "timestamp", "user_id", "processed_at")
 
 
 class FlagSchema(ma.SQLAlchemyAutoSchema):
