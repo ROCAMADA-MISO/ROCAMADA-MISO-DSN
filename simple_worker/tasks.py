@@ -1,6 +1,6 @@
 import os
 import time
-import datetime
+from datetime import datetime
 import json
 from celery import Celery
 from celery.utils.log import get_task_logger
@@ -107,7 +107,7 @@ def upload_status(filename):
     cur = conn.cursor()
     cur.execute("UPDATE task SET status=(%s)"
                 " WHERE filename = (%s)", ("processed",filename,));
-    cur.execute("UPDATE task SET processed_at=(%s) WHERE filename = (%s)", (time.time(), filename))
+    cur.execute("UPDATE task SET processed_at=(%s) WHERE filename = (%s)", (datetime.now(), filename))
     conn.commit()
     cur.close()
     logger.info('Updated task status')
