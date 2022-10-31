@@ -81,9 +81,9 @@ def get_info_user(userid, filename):
 @app.task()
 def send_email(filename, email, username):
     logger.info('Got Request - Starting work ')
-    SANDBOX = os.environ[SANDBOX]
-    FROM = os.environ[FROM_EMAIL]
-    KEY = os.environ[KEY]
+    SANDBOX = os.environ['SANDBOX']
+    FROM = os.environ['FROM_EMAIL']
+    KEY = os.environ['KEY']
     request_url = f'https://api.mailgun.net/v3/{SANDBOX}/messages'
     message = f'Hola {username}, la conversión del archivo {filename} está listo para ser descargado!'
     From = f'{FROM} <postmaster@{SANDBOX}>'
