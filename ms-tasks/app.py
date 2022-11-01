@@ -213,10 +213,14 @@ class FileResource(Resource):
     def get(self, filename):
         return send_file("./files/{}".format(filename), download_name=filename)
 
-
+class HealthResource(Resource):
+    def get(self):
+        return "ok", 200
+    
 api.add_resource(TasksResource, '/api/tasks')
 api.add_resource(TaskResource, '/api/tasks/<int:task_id>')
 api.add_resource(FileResource, '/api/files/<string:filename>')
+api.add_resource(HealthResource, '/api/health')
 
 
 def return_app():
