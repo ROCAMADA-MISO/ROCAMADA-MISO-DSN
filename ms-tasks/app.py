@@ -14,12 +14,15 @@ from celery import Celery
 load_dotenv()
 
 app = Flask(__name__)
-simple = Celery('simple_worker', broker='redis://redis:6379/0',
-                backend='redis://redis:6379/0')
+redis_host = os.environ['REDIS_HOST']
+redis_uri = "redis://{}:6379/0".format(redis_host)
+simple = Celery('simple_worker', broker=redis_uri,
+                backend=redis_uri)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DB_TASKS_URI']
+db_uri = "postgresql://{}:{}@{}:5432/tasks".format(os.environ['DB_USER'], os.environ['DB_PASSWORD'], os.environ['DB_HOST'])
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET']
-#app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -34,6 +37,7 @@ class Task(db.Model):
     status = db.Column(db.String(15))
     timestamp = db.Column(db.DateTime(timezone=False))
     user_id = db.Column(db.Integer)
+    processed_at = db.Column(db.DateTime(timezone=False))
 
 
 class Flag(db.Model):
@@ -44,7 +48,7 @@ class Flag(db.Model):
 class TaskSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         fields = ("id", "filename", "new_format",
-                  "status", "timestamp", "user_id")
+                  "status", "timestamp", "user_id", "processed_at")
 
 
 class FlagSchema(ma.SQLAlchemyAutoSchema):
@@ -78,7 +82,7 @@ class TasksResource(Resource):
         filename = file.filename.split(".")[0]
         format = file.filename.split(".")[1]
         filename = "{}_{}.{}".format(filename, timestr, format)
-        file.save(filename)
+        file.save("./files/{}".format(filename))
 
         new_task = Task(
             filename=filename,
@@ -146,7 +150,7 @@ class TaskResource(Resource):
             db.session.commit()
         if task.status == "processed":
             os.remove(
-                "./{}.{}".format(task.filename.split(".")[0], task.new_format))
+                "./files/{}.{}".format(task.filename.split(".")[0], task.new_format))
 
             task.new_format = new_format
             task.status = "uploaded"
@@ -176,10 +180,10 @@ class TaskResource(Resource):
         if task is None:
             return "Task not found", 404
 
-        os.remove("./{}".format(task.filename))
+        os.remove("./files/{}".format(task.filename))
 
         if task.status == "processed":
-            os.remove("./{}.{}".format(task.filename, task.new_format))
+            os.remove("./files/{}.{}".format(task.filename.split('.')[0], task.new_format))
 
         Task.query.filter(Task.id == task_id, Task.user_id == user_id).delete()
         db.session.commit()
@@ -207,7 +211,7 @@ class TaskResource(Resource):
 class FileResource(Resource):
     @jwt_required()
     def get(self, filename):
-        return send_file("./{}".format(filename), download_name=filename)
+        return send_file("./files/{}".format(filename), download_name=filename)
 
 
 api.add_resource(TasksResource, '/api/tasks')
@@ -217,3 +221,4 @@ api.add_resource(FileResource, '/api/files/<string:filename>')
 
 def return_app():
     return app
+
