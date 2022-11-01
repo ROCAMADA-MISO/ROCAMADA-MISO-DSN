@@ -5,14 +5,8 @@ x-var: &parameters
   DB_USER: postgres
   DB_PASSWORD: cloudg14
   DB_HOST: 10.20.224.3
-  REDIS_HOST: redis
-services:
-  redis:
-    image: redis
-    ports:
-      - "6379:6379"
-    volumes: 
-      - ./redis_data:/data   
+  REDIS_HOST: 10.128.0.6
+services: 
   ms-tasks:
     volumes:
         - ./ms-tasks/:/mnt/
@@ -25,8 +19,6 @@ services:
     restart: on-failure
     environment:
       <<: *parameters
-    depends_on:
-      - redis
   ms-auth:
     volumes:
         - ./ms-auth/:/mnt/
