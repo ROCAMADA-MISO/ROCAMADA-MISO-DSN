@@ -12,7 +12,9 @@ load_dotenv()
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DB_USERS_URI']
+db_uri = "postgresql://{}:{}@{}:5432/users".format(os.environ['DB_USER'], os.environ['DB_PASSWORD'], os.environ['DB_HOST'])
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET']
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = False
 
