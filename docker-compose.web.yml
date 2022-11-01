@@ -16,7 +16,7 @@ services:
     command: "gunicorn -b 0.0.0.0:5000 'app:return_app()'"
     ports:
       - "5000:5000"
-    restart: on-failure
+    restart: always
     environment:
       <<: *parameters
   ms-auth:
@@ -27,7 +27,7 @@ services:
     command: "gunicorn -b 0.0.0.0:5000 'app:return_app()'"
     ports:
       - "5001:5000"
-    restart: on-failure
+    restart: always
     environment:
       <<: *parameters
   nginx:
@@ -38,7 +38,7 @@ services:
         - ./nginx/nginx-proxy.conf:/etc/nginx/conf.d/default.conf:ro
         - ./nginx/localhost.crt:/etc/ssl/certs/localhost.crt
         - ./nginx/localhost.key:/etc/ssl/private/localhost.key
-    restart: on-failure
+    restart: always
     depends_on:
         - ms-tasks
         - ms-auth
