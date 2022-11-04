@@ -6,6 +6,7 @@ x-var: &parameters
   DB_PASSWORD: cloudg14
   DB_HOST: 10.20.224.3
   REDIS_HOST: 10.128.0.6
+  BUCKET_NAME: ''
 services: 
   ms-tasks:
     volumes:

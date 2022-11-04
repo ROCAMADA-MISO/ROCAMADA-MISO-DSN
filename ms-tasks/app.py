@@ -10,6 +10,8 @@ from flask import Flask, request, send_file
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 import json
 from celery import Celery
+from google.cloud import storage
+import tempfile
 
 load_dotenv()
 
