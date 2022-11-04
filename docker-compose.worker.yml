@@ -5,6 +5,7 @@ x-var: &parameters
   FROM_EMAIL: 'conversor3000@gmail.com'
   SANDBOX: ''
   KEY: ''
+  BUCKET_NAME: ''
   REDIS_HOST: redis
   DB_HOST: 10.20.224.3
   DB_USER: postgres

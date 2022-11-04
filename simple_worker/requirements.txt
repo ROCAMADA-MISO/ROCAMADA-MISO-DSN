@@ -7,3 +7,4 @@ celery[redis]
 pydub
 psycopg2-binary
 python-dotenv
+google-cloud-storage
