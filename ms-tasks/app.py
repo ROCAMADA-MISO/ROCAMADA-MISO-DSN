@@ -21,10 +21,15 @@ redis_uri = "redis://{}:6379/0".format(redis_host)
 simple = Celery('simple_worker', broker=redis_uri,
                 backend=redis_uri)
 
-db_uri = "postgresql://{}:{}@{}:5432/tasks".format(os.environ['DB_USER'], os.environ['DB_PASSWORD'], os.environ['DB_HOST'])
+db_uri = "postgresql://{}:{}@{}:5432/tasks".format(
+    os.environ['DB_USER'], os.environ['DB_PASSWORD'], os.environ['DB_HOST'])
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET']
+
+credential_path = "credential.json"
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credential_path
+storage_client = storage.Client()
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -62,6 +67,7 @@ task_schema = TaskSchema()
 tasks_schema = TaskSchema(many=True)
 flag_schema = FlagSchema()
 
+
 with app.app_context():
     db.create_all()
     if (len(Flag.query.all()) == 0):
@@ -85,6 +91,9 @@ class TasksResource(Resource):
         format = file.filename.split(".")[1]
         filename = "{}_{}.{}".format(filename, timestr, format)
         file.save("./files/{}".format(filename))
+        file_path_local = r'./files/'
+        self.upload_to_bucket(filename, os.path.join(
+            file_path_local, filename), 'data_bucket291')
 
         new_task = Task(
             filename=filename,
@@ -133,6 +142,16 @@ class TasksResource(Resource):
 
         return tasks_schema.dump(task, many=True), 200
 
+    def upload_to_bucket(blob_name, file_path, bucket_name):
+        try:
+            bucket = storage_client.get_bucket(bucket_name)
+            blob = bucket.blob(blob_name)
+            blob.upload_from_filename(file_path)
+            return True
+        except Exception as e:
+            print(e)
+            return False
+
 
 class TaskResource(Resource):
     @jwt_required()
@@ -158,10 +177,10 @@ class TaskResource(Resource):
             task.status = "uploaded"
             db.session.commit()
             r = simple.send_task('tasks.audio_converter', kwargs={'filename': task.filename,
-                                                              'new_format': new_format,
-                                                              'userid': user_id,
-                                                              'timestamp': time.time()
-                                                              })
+                                                                  'new_format': new_format,
+                                                                  'userid': user_id,
+                                                                  'timestamp': time.time()
+                                                                  })
             app.logger.info(r.backend)
 
         return task_schema.dump({
@@ -185,7 +204,8 @@ class TaskResource(Resource):
         os.remove("./files/{}".format(task.filename))
 
         if task.status == "processed":
-            os.remove("./files/{}.{}".format(task.filename.split('.')[0], task.new_format))
+            os.remove(
+                "./files/{}.{}".format(task.filename.split('.')[0], task.new_format))
 
         Task.query.filter(Task.id == task_id, Task.user_id == user_id).delete()
         db.session.commit()
@@ -215,10 +235,12 @@ class FileResource(Resource):
     def get(self, filename):
         return send_file("./files/{}".format(filename), download_name=filename)
 
+
 class HealthResource(Resource):
     def get(self):
         return "ok", 200
-    
+
+
 api.add_resource(TasksResource, '/api/tasks')
 api.add_resource(TaskResource, '/api/tasks/<int:task_id>')
 api.add_resource(FileResource, '/api/files/<string:filename>')
@@ -227,4 +249,3 @@ api.add_resource(HealthResource, '/api/health')
 
 def return_app():
     return app
-
