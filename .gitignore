@@ -5,3 +5,4 @@
 /ms-auth/venv
 credentials.json
 .DS_Store
+credential.json

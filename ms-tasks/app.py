@@ -91,9 +91,10 @@ class TasksResource(Resource):
         format = file.filename.split(".")[1]
         filename = "{}_{}.{}".format(filename, timestr, format)
         file.save("./files/{}".format(filename))
-        file_path_local = r'./files/'
-        self.upload_to_bucket(filename, os.path.join(
-            file_path_local, filename), 'data_bucket291')
+        file_path_local = "./files/{}".format(filename)
+        self.upload_to_bucket(filename, file_path_local, 'data_bucket291')
+        os.remove(
+            "./files/{}.{}".format(filename.split(".")[0], format))
 
         new_task = Task(
             filename=filename,
@@ -142,11 +143,14 @@ class TasksResource(Resource):
 
         return tasks_schema.dump(task, many=True), 200
 
-    def upload_to_bucket(blob_name, file_path, bucket_name):
+    def upload_to_bucket(self, blob_name, file_path, bucket_name):
         try:
             bucket = storage_client.get_bucket(bucket_name)
             blob = bucket.blob(blob_name)
             blob.upload_from_filename(file_path)
+
+            '''for blob in storage_client.list_blobs(bucket_name):
+                print(str(blob))'''
             return True
         except Exception as e:
             print(e)
@@ -170,8 +174,9 @@ class TaskResource(Resource):
             task.new_format = new_format
             db.session.commit()
         if task.status == "processed":
-            os.remove(
-                "./files/{}.{}".format(task.filename.split(".")[0], task.new_format))
+            filename = "{}.{}".format(
+                task.filename.split(".")[0], task.new_format)
+            self.delete_to_blob(filename, "data_bucket291")
 
             task.new_format = new_format
             task.status = "uploaded"
@@ -228,6 +233,19 @@ class TaskResource(Resource):
             "timestamp": task.timestamp,
             "user_id": task.user_id
         }), 200
+
+    def delete_to_blob(self, blob_name, bucket_name):
+        try:
+            bucket = storage_client.get_bucket(bucket_name)
+            blob = bucket.blob(blob_name)
+            blob.delete()
+
+            for blob2 in storage_client.list_blobs(bucket_name):
+                print(str(blob2))
+            return True
+        except Exception as e:
+            print(e)
+            return False
 
 
 class FileResource(Resource):
