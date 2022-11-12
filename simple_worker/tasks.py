@@ -19,7 +19,6 @@ app = Celery('tasks', broker=redis_uri, backend=redis_uri)
 db_host = os.environ['DB_HOST']
 db_user = os.environ['DB_USER']
 db_password = os.environ['DB_PASSWORD']
-bucket_name = os.environ['BUCKET_NAME']
 
 conn = None
 conn2 = None
@@ -56,7 +55,7 @@ def audio_converter(filename,new_format,userid,timestamp):
     
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'credentials.json'
     storage_client = storage.Client()
-    bucket_name = bucket_name
+    bucket_name = 'data_bucket291'
     bucket = storage_client.get_bucket(bucket_name)
     blob = bucket.blob(filename)
     blob.download_to_filename(src)
