@@ -15,5 +15,6 @@ services:
     user: root
     volumes:
       - ../shared-files/:/simple_worker/files/
+    restart: always
     environment:
       <<: *parameters  
