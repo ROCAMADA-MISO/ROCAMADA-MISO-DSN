@@ -5,7 +5,7 @@ x-var: &parameters
   FROM_EMAIL: 'conversor3000@gmail.com'
   SANDBOX: ''
   KEY: ''
-  REDIS_HOST: 10.128.0.2
+  REDIS_HOST: redis
   DB_HOST: 10.20.224.3
   DB_USER: postgres
   DB_PASSWORD: cloudg14
@@ -18,3 +18,11 @@ services:
       - ../shared-files/:/simple_worker/files/
     environment:
       <<: *parameters  
+    depends_on:
+      - redis
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes: 
+      - ./redis_data:/data   

@@ -12,7 +12,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
-db_uri = "postgresql://{}:{}@{}:5432/users".format(os.environ['DB_USER'], os.environ['DB_PASSWORD'], os.environ['DB_HOST'])
+db_uri = "postgresql://{}:{}@{}:5432/users".format(
+    os.environ['DB_USER'], os.environ['DB_PASSWORD'], os.environ['DB_HOST'])
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET']
@@ -55,22 +56,24 @@ class SignUpResource(Resource):
         db.session.add(new_user)
         db.session.commit()
 
-        return {"message":"User created"}, 201
+        return {"message": "User created"}, 201
+
 
 class SignInResource(Resource):
     def post(self):
         username = request.json['username']
         password = request.json['password'].encode('utf-8')
-        
-        user = User.query.filter(User.username==username).first()
-        
+
+        user = User.query.filter(User.username == username).first()
+
         if user is None:
             return "Wrong credentials", 400
-        
+
         if not bcrypt.checkpw(password, user.password.encode('utf-8')):
             return "Wrong credentials", 400
-        
+
         return {"token": create_access_token(identity=user.id)}, 200
+
 
 api.add_resource(SignUpResource, '/api/auth/signup')
 api.add_resource(SignInResource, '/api/auth/signin')

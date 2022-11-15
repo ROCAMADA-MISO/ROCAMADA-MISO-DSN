@@ -3,4 +3,6 @@
 *_data
 /ms-tasks/venv
 /ms-auth/venv
-
+credentials.json
+.DS_Store
+credential.json

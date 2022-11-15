@@ -18,3 +18,12 @@ Adicionalmente, ejecutar `flask --app app.py --debug run` adentro del directorio
 Ejecutar `docker-compose build` y luego `docker-compose up` sobre la raíz del proyecto. Esto levantará los servidores WSGI Gunicorn junto con nginx para el procesamiento y redireccionamiento de peticiones.
 
 Si se desea ejecutar únicamente algún archivo de docker-compose, ejecutar el siguiente comando `docker-compose -f <file_name> <command>`
+
+### Variables de Entorno
+
+Recordar agregar en el `docker-compose.worker.yml` los nombres de las siguientes variables de entorno:
+- SANDBOX: ''
+- KEY: ''
+- BUCKET_NAME: ''
+- 
+Además en la raiz del proyecto incluir las credenciales de cloud storage en un archivo llamado `credentials.json`

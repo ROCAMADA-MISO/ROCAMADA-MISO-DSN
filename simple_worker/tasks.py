@@ -8,6 +8,8 @@ from celery.signals import worker_process_init, worker_process_shutdown
 from pydub import AudioSegment
 import requests
 import psycopg2
+from google.cloud import storage
+import tempfile
 
 
 logger = get_task_logger(__name__)
@@ -47,10 +49,21 @@ def audio_converter(filename,new_format,userid,timestamp):
     if elapsed/60 > 10:
         update_flag.delay()
         return logger.info('Task took too long to complete '+ str(elapsed/60))
-    src = "/simple_worker/files/"+filename
-    dst = "/simple_worker/files/"+filename.split(".")[0] + "."+ new_format
+    tmpdir = tempfile.gettempdir()
+    src = tmpdir + '/' + filename
+    dst = tmpdir + '/' + filename.split(".")[0] + "."+ new_format
+    
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'credentials.json'
+    storage_client = storage.Client()
+    bucket_name = 'data_bucket291'
+    bucket = storage_client.get_bucket(bucket_name)
+    blob = bucket.blob(filename)
+    blob.download_to_filename(src)
     audio = AudioSegment.from_file(src)
     audio.export(dst, format=new_format)
+    blob = bucket.blob(filename.split(".")[0] + "."+ new_format)
+    blob.upload_from_filename(dst)
+    
     if os.environ['EMAIL_SEND'] == 'True':
         msn = get_info_user.delay(userid, filename)
     upload_status.delay(filename)
