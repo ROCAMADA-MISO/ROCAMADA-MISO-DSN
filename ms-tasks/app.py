@@ -191,9 +191,9 @@ class TaskResource(Resource):
             data_str = "Message for file edition {}".format(task.filename)
             data = data_str.encode("utf-8")
             future = publisher.publish(
-                topic_path, data, filename=filename, new_format=new_format, timestamp=str(
-                    time.time()),
-                userid=str(user_id))
+                topic_path, data, filename=task.filename, new_format=new_format, timestamp=str(datetime.strptime(datetime.now().strftime(
+                    '%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S')),
+                user_id=str(user_id))
             app.logger.info(future.result())
             app.logger.info(f"Published message for file edition {filename}")
 

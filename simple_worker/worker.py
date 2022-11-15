@@ -35,13 +35,13 @@ conn2 = psycopg2.connect(host=db_host,
 
 
 def callback(message):
+    message.ack()
     print("Received file ", message.attributes['filename'])
     sys.stdout.flush()
     audio_converter(message.attributes['filename'],
                     message.attributes['new_format'], int(
                         message.attributes['user_id']),
                     datetime.strptime(message.attributes['timestamp'], '%Y-%m-%d %H:%M:%S'))
-    message.ack()
 
 
 def audio_converter(filename, new_format, userid, timestamp):
