@@ -135,4 +135,8 @@ future = subscriber.subscribe(subscription_path, callback=callback)
 
 while True:
     with subscriber:
-        future.result()
+        try:
+            future.result()
+        except Exception as e:
+            print(f"Error on processing file: {e}")
+            sys.stdout.flush()
