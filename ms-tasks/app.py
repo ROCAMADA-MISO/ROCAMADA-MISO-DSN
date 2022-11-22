@@ -9,17 +9,14 @@ from flask_marshmallow import Marshmallow
 from flask import Flask, request, send_file
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 import json
-from celery import Celery
 from google.cloud import storage
 import tempfile
+from google.cloud import pubsub_v1
+
 
 load_dotenv()
 
 app = Flask(__name__)
-redis_host = os.environ['REDIS_HOST']
-redis_uri = "redis://{}:6379/0".format(redis_host)
-simple = Celery('simple_worker', broker=redis_uri,
-                backend=redis_uri)
 
 db_uri = "postgresql://{}:{}@{}:5432/tasks".format(
     os.environ['DB_USER'], os.environ['DB_PASSWORD'], os.environ['DB_HOST'])
@@ -27,9 +24,13 @@ db_uri = "postgresql://{}:{}@{}:5432/tasks".format(
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config["JWT_SECRET_KEY"] = os.environ['JWT_SECRET']
 
-credential_path = "credential.json"
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credential_path
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "credentials.json"
 storage_client = storage.Client()
+
+project_id = "miso-nubes-g14"
+topic_id = "audio-processing"
+publisher = pubsub_v1.PublisherClient()
+topic_path = publisher.topic_path(project_id, topic_id)
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -92,7 +93,7 @@ class TasksResource(Resource):
         filename = "{}_{}.{}".format(filename, timestr, format)
         file.save("./files/{}".format(filename))
         file_path_local = "./files/{}".format(filename)
-        self.upload_to_bucket(filename, file_path_local, 'data_bucket291')
+        self.upload_to_bucket(filename, file_path_local, 'audio_converter_g14')
         os.remove(
             "./files/{}.{}".format(filename.split(".")[0], format))
 
@@ -107,13 +108,17 @@ class TasksResource(Resource):
         db.session.add(new_task)
         db.session.commit()
         app.logger.info("Invoking task audio_converter")
-        r = simple.send_task('tasks.audio_converter', kwargs={'filename': filename,
-                                                              'new_format': new_format,
-                                                              'userid': user_id,
-                                                              'timestamp': start
-                                                              })
-        app.logger.info(r.backend)
 
+        # Sending message to Pub/Sub
+        data_str = "Message for file {}".format(filename)
+        data = data_str.encode("utf-8")
+        future = publisher.publish(
+            topic_path, data, filename=filename, new_format=new_format, status="uploaded",
+            timestamp=str(datetime.strptime(datetime.now().strftime(
+                '%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S')),
+            user_id=str(user_id))
+        app.logger.info(future.result())
+        app.logger.info(f"Published message for file {filename}")
         return {"message": "Tarea creada exitosamente"}, 200
 
     @jwt_required()
@@ -176,17 +181,21 @@ class TaskResource(Resource):
         if task.status == "processed":
             filename = "{}.{}".format(
                 task.filename.split(".")[0], task.new_format)
-            self.delete_to_blob(filename, "data_bucket291")
+            self.delete_to_blob(filename, "audio_converter_g14")
 
             task.new_format = new_format
             task.status = "uploaded"
             db.session.commit()
-            r = simple.send_task('tasks.audio_converter', kwargs={'filename': task.filename,
-                                                                  'new_format': new_format,
-                                                                  'userid': user_id,
-                                                                  'timestamp': time.time()
-                                                                  })
-            app.logger.info(r.backend)
+
+            # Sending message to Pub/Sub
+            data_str = "Message for file edition {}".format(task.filename)
+            data = data_str.encode("utf-8")
+            future = publisher.publish(
+                topic_path, data, filename=task.filename, new_format=new_format, timestamp=str(datetime.strptime(datetime.now().strftime(
+                    '%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S')),
+                user_id=str(user_id))
+            app.logger.info(future.result())
+            app.logger.info(f"Published message for file edition {filename}")
 
         return task_schema.dump({
             "id": task.id,

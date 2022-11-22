@@ -10,6 +10,4 @@ ADD . /simple_worker
 RUN mkdir -m 777 /simple_worker/data
 WORKDIR /simple_worker
 
-ENTRYPOINT celery -A tasks worker --loglevel=info
-#-Q celery_worker
-#ENTRYPOINT ['celery','-A','test_celery', 'worker', '--loglevel=info']
+ENTRYPOINT python3 worker.py
