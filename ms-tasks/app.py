@@ -205,12 +205,10 @@ class TaskResource(Resource):
 
         if task is None:
             return "Task not found", 404
-
-        os.remove("./files/{}".format(task.filename))
-
-        if task.status == "processed":
-            os.remove(
-                "./files/{}.{}".format(task.filename.split('.')[0], task.new_format))
+        
+        self.delete_to_blob(task.filename, "data_bucket291")
+        filename = "{}.{}".format(task.filename.split(".")[0], task.new_format)
+        self.delete_to_blob(filename, "data_bucket291")
 
         Task.query.filter(Task.id == task_id, Task.user_id == user_id).delete()
         db.session.commit()
