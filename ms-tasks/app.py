@@ -249,7 +249,13 @@ class TaskResource(Resource):
 class FileResource(Resource):
     @jwt_required()
     def get(self, filename):
-        return send_file("./files/{}".format(filename), download_name=filename)
+        tmpdir = tempfile.gettempdir()
+        src = tmpdir + '/' + filename
+        bucket_name = 'data_bucket291'
+        bucket = storage_client.get_bucket(bucket_name)
+        blob = bucket.blob(filename)
+        blob.download_to_filename(src)
+        return send_file(src, download_name=filename)
 
 
 class HealthResource(Resource):
