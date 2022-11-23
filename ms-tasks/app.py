@@ -215,9 +215,9 @@ class TaskResource(Resource):
         if task is None:
             return "Task not found", 404
 
-        self.delete_to_blob(task.filename, "data_bucket291")
+        self.delete_to_blob(task.filename, "audio_converter_g14")
         filename = "{}.{}".format(task.filename.split(".")[0], task.new_format)
-        self.delete_to_blob(filename, "data_bucket291")
+        self.delete_to_blob(filename, "audio_converter_g14")
 
         Task.query.filter(Task.id == task_id, Task.user_id == user_id).delete()
         db.session.commit()
@@ -260,7 +260,7 @@ class FileResource(Resource):
     def get(self, filename):
         tmpdir = tempfile.gettempdir()
         src = tmpdir + '/' + filename
-        bucket_name = 'data_bucket291'
+        bucket_name = 'audio_converter_g14'
         bucket = storage_client.get_bucket(bucket_name)
         blob = bucket.blob(filename)
         blob.download_to_filename(src)
