@@ -1,0 +1,15 @@
+runtime: python39
+
+service: ms-auth
+env_variables:
+  JWT_SECRET: thisisasecret
+  DB_USER: postgres
+  DB_PASSWORD: cloudg14
+  DB_HOST: 34.68.252.15
+  BUCKET_NAME: 'audio_converter_g14'
+automatic_scaling:
+  min_instances: 1
+  max_instances: 1
+  max_idle_instances: 1
+  min_idle_instances: 1
+entrypoint: gunicorn -b 0.0.0.0:8080 'app:return_app()'

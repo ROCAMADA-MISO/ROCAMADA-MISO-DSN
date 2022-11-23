@@ -1,0 +1,15 @@
+runtime: python39
+
+service: worker
+env_variables:
+  DB_HOST: 10.20.224.3
+  DB_USER: postgres
+  DB_PASSWORD: cloudg14
+  BUCKET_NAME: 'audio_converter_g14'
+  EMAIL_SEND: 'False'
+automatic_scaling:
+  min_instances: 1
+  max_instances: 1
+  max_idle_instances: 1
+  min_idle_instances: 1
+entrypoint: python3 worker.py
