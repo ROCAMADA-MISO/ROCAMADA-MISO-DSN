@@ -91,12 +91,9 @@ class TasksResource(Resource):
         filename = file.filename.split(".")[0]
         format = file.filename.split(".")[1]
         filename = "{}_{}.{}".format(filename, timestr, format)
-        file.save("./files/{}".format(filename))
-        file_path_local = "./files/{}".format(filename)
-        self.upload_to_bucket(filename, file_path_local, 'audio_converter_g14')
-        os.remove(
-            "./files/{}.{}".format(filename.split(".")[0], format))
-
+        bucket = storage_client.get_bucket('audio_converter_g14')
+        blob = bucket.blob(filename)
+        blob.upload_from_string(file.read(), content_type=file.content_type)
         new_task = Task(
             filename=filename,
             new_format=new_format,
@@ -147,20 +144,6 @@ class TasksResource(Resource):
             return "Task not found", 404
 
         return tasks_schema.dump(task, many=True), 200
-
-    def upload_to_bucket(self, blob_name, file_path, bucket_name):
-        try:
-            bucket = storage_client.get_bucket(bucket_name)
-            blob = bucket.blob(blob_name)
-            blob.upload_from_filename(file_path)
-
-            '''for blob in storage_client.list_blobs(bucket_name):
-                print(str(blob))'''
-            return True
-        except Exception as e:
-            print(e)
-            return False
-
 
 class TaskResource(Resource):
     @jwt_required()
@@ -215,9 +198,9 @@ class TaskResource(Resource):
         if task is None:
             return "Task not found", 404
 
-        self.delete_to_blob(task.filename, "data_bucket291")
+        self.delete_to_blob(task.filename, "audio_converter_g14")
         filename = "{}.{}".format(task.filename.split(".")[0], task.new_format)
-        self.delete_to_blob(filename, "data_bucket291")
+        self.delete_to_blob(filename, "audio_converter_g14")
 
         Task.query.filter(Task.id == task_id, Task.user_id == user_id).delete()
         db.session.commit()
@@ -258,13 +241,11 @@ class TaskResource(Resource):
 class FileResource(Resource):
     @jwt_required()
     def get(self, filename):
-        tmpdir = tempfile.gettempdir()
-        src = tmpdir + '/' + filename
-        bucket_name = 'data_bucket291'
+        bucket_name = 'audio_converter_g14'
         bucket = storage_client.get_bucket(bucket_name)
         blob = bucket.blob(filename)
-        blob.download_to_filename(src)
-        return send_file(src, download_name=filename)
+        src = blob.download_as_string()
+        return Response(src,  mimetype=blob.content_type)
 
 
 class HealthResource(Resource):
