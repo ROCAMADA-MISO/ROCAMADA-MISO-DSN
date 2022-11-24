@@ -9,6 +9,7 @@ from pydub import AudioSegment
 from concurrent import futures
 from google.cloud import storage
 from google.cloud import pubsub_v1
+from io import BytesIO
 
 print("Starting worker")
 sys.stdout.flush()
@@ -53,20 +54,20 @@ def audio_converter(filename, new_format, userid, timestamp):
         print('Task took too long to complete ' + str(elapsed/60))
         sys.stdout.flush()
         return
+    src = 'https://storage.googleapis.com/{}/{}'.format(bucket_name,filename)
+    res = requests.get(src)
+    audio = AudioSegment.from_file(BytesIO(res.content))
     tmpdir = tempfile.gettempdir()
-    src = tmpdir + '/' + filename
     dst = tmpdir + '/' + filename.split(".")[0] + "." + new_format
 
     storage_client = storage.Client()
     bucket_name = 'audio_converter_g14'
     bucket = storage_client.get_bucket(bucket_name)
-    blob = bucket.blob(filename)
-    blob.download_to_filename(src)
-    audio = AudioSegment.from_file(src)
     audio.export(dst, format=new_format)
     blob = bucket.blob(filename.split(".")[0] + "." + new_format)
     blob.upload_from_filename(dst)
-
+    os.remove(dst)
+    
     if os.environ['EMAIL_SEND'] == 'True':
         get_info_user(userid, filename)
     upload_status(filename)
