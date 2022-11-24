@@ -2,7 +2,7 @@ runtime: python39
 
 service: worker
 env_variables:
-  DB_HOST: 10.20.224.3
+  DB_HOST: 34.68.252.15
   DB_USER: postgres
   DB_PASSWORD: cloudg14
   BUCKET_NAME: 'audio_converter_g14'
