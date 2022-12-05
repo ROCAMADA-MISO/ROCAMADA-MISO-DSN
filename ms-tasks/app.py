@@ -94,7 +94,6 @@ class TasksResource(Resource):
         bucket = storage_client.get_bucket('audio_converter_g14')
         blob = bucket.blob(filename)
         blob.upload_from_string(file.read(), content_type=file.content_type)
-
         new_task = Task(
             filename=filename,
             new_format=new_format,
@@ -145,7 +144,6 @@ class TasksResource(Resource):
             return "Task not found", 404
 
         return tasks_schema.dump(task, many=True), 200
-
 
 class TaskResource(Resource):
     @jwt_required()
